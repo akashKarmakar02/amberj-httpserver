@@ -1,9 +1,9 @@
-package com.amberj.server;
+package com.amberj.net.httpserver;
 
-import com.amberj.Config;
-import com.amberj.http.HttpResponse;
+import com.amberj.net.Config;
+import com.amberj.net.http.HttpResponse;
 import com.sun.net.httpserver.HttpServer;
-import com.amberj.http.HttpRequest;
+import com.amberj.net.http.HttpRequest;
 
 import java.io.*;
 import java.net.InetSocketAddress;

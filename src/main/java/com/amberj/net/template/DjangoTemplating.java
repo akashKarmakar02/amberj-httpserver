@@ -1,4 +1,4 @@
-package com.amberj.template;
+package com.amberj.net.template;
 
 
 import java.util.ArrayList;

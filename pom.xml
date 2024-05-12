@@ -5,12 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.amberj</groupId>
-    <artifactId>HttpServer</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <artifactId>httpserver</artifactId>
+    <version>0.1.0-alpha-04</version>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub AmberJ Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/akashKarmakar02/amberj</url>
+        </repository>
+    </distributionManagement>
 
     <properties>
-        <maven.compiler.source>22</maven.compiler.source>
-        <maven.compiler.target>22</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

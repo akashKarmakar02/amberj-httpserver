@@ -1,4 +1,4 @@
-package com.amberj.http;
+package com.amberj.net.http;
 
 import java.util.Map;
 

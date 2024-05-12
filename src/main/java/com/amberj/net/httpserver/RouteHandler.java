@@ -1,10 +1,10 @@
-package com.amberj.server;
+package com.amberj.net.httpserver;
 
-import com.amberj.Config;
+import com.amberj.net.Config;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.amberj.http.HttpRequest;
-import com.amberj.http.HttpResponse;
+import com.amberj.net.http.HttpRequest;
+import com.amberj.net.http.HttpResponse;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

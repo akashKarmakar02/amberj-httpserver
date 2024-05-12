@@ -1,4 +1,4 @@
-package com.amberj;
+package com.amberj.net;
 
 public class Config {
     public static String BASE_DIR = "src/main/resources/";
