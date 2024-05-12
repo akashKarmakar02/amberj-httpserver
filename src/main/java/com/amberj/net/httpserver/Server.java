@@ -43,18 +43,14 @@ public class Server {
     }
 
     public static String getPrefixUntilWildcard(String input, String wildcardPattern) {
-        // Escape special characters in the wildcard pattern
         String regexPattern = wildcardPattern.replace("*", "\\*");
 
-        // Find the index of the first wildcard
         int wildcardIndex = regexPattern.indexOf("*");
 
-        // If wildcard is not found, return the input string
         if (wildcardIndex == -1) {
             return input;
         }
 
-        // Return the substring of the input string up to the first wildcard
         return input.substring(0, wildcardIndex - 1);
     }
 
@@ -93,6 +89,24 @@ public class Server {
             routeHandlerMap.put(route, RouteHandler.create(route).post(handler));
         }
     }
+
+    public void put(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
+        if (routeHandlerMap.containsKey(route)) {
+            routeHandlerMap.put(route, routeHandlerMap.get(route).put(handler));
+        } else {
+            routeHandlerMap.put(route, RouteHandler.create(route).put(handler));
+        }
+    }
+
+    public void delete(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
+        if (routeHandlerMap.containsKey(route)) {
+            routeHandlerMap.put(route, routeHandlerMap.get(route).delete(handler));
+        } else {
+            routeHandlerMap.put(route, RouteHandler.create(route).delete(handler));
+        }
+    }
+
+    public void handle() {}
 
     public void setBaseDir(String path) {
         Config.BASE_DIR = path;

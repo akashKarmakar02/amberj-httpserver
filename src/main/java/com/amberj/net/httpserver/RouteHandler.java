@@ -17,8 +17,13 @@ import static java.lang.System.out;
 
 class RouteHandler implements HttpHandler {
 
+    // handler for request
     private BiConsumer<HttpRequest, HttpResponse> getHandler;
     private BiConsumer<HttpRequest, HttpResponse> postHandler;
+    private BiConsumer<HttpRequest, HttpResponse> putHandler;
+    private BiConsumer<HttpRequest, HttpResponse> deleteHandler;
+
+    // route specific values
     private final String route;
     private ArrayList<String> pathParams;
     private String regex;
@@ -37,6 +42,16 @@ class RouteHandler implements HttpHandler {
 
     public RouteHandler post(BiConsumer<HttpRequest, HttpResponse> handler) {
         this.postHandler = handler;
+        return this;
+    }
+
+    public RouteHandler put(BiConsumer<HttpRequest, HttpResponse> handler) {
+        this.putHandler = handler;
+        return this;
+    }
+
+    public RouteHandler delete(BiConsumer<HttpRequest, HttpResponse> handler) {
+        this.deleteHandler = handler;
         return this;
     }
 
@@ -96,11 +111,23 @@ class RouteHandler implements HttpHandler {
             } else {
                 handlePostRequest(exchange);
             }
-        } else {
+        } else if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
             if (getHandler == null) {
                 handleMethodNotAllowed(exchange);
             } else {
                 handleGetRequest(exchange);
+            }
+        } else if (exchange.getRequestMethod().equalsIgnoreCase("PUT")) {
+            if (putHandler == null) {
+                handleMethodNotAllowed(exchange);
+            } else {
+                handlePutRequest(exchange);
+            }
+        } else if (exchange.getRequestMethod().equalsIgnoreCase("DELETE")) {
+            if (deleteHandler == null) {
+                handleMethodNotAllowed(exchange);
+            } else {
+                handleDeleteRequest(exchange);
             }
         }
     }
@@ -132,6 +159,16 @@ class RouteHandler implements HttpHandler {
         }
     }
 
+    private void handleRedirect(HttpExchange exchange, String redirectUrl) throws IOException {
+        exchange.getResponseHeaders().set("Location", redirectUrl);
+        exchange.getResponseHeaders().set("Cache-Control", "no-cache");
+        String response = "Redirecting to " + redirectUrl;
+        exchange.sendResponseHeaders(301, response.getBytes().length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
+    }
+
     private void handleGetRequest(HttpExchange exchange) throws IOException {
         HttpRequest httpRequest;
 
@@ -150,13 +187,7 @@ class RouteHandler implements HttpHandler {
 
         getHandler.accept(httpRequest, httpResponse);
         if (httpResponse.getRedirectURL() != null) {
-            exchange.getResponseHeaders().set("Location", httpResponse.getRedirectURL());
-            exchange.getResponseHeaders().set("Cache-Control", "no-cache");
-            String response = "Redirecting to " + httpResponse.getRedirectURL();
-            exchange.sendResponseHeaders(301, response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
             exchange.sendResponseHeaders(200, response.getBytes().length);
@@ -164,6 +195,72 @@ class RouteHandler implements HttpHandler {
             os.write(response.getBytes());
             os.close();
             out.println(new Date() + " GET: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
+        }
+    }
+
+    private void handlePutRequest(HttpExchange exchange) throws IOException {
+        var inputStream = exchange.getRequestBody();
+        Map<String, Object> postData = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] params = line.split("&");
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
+                    postData.put(key, value);
+                }
+            }
+        }
+        reader.close();
+
+
+        var httpRequest = new HttpRequest(postData, new HashMap<>());
+
+        var httpResponse = new HttpResponse();
+
+        putHandler.accept(httpRequest, httpResponse);
+
+        if (httpResponse.getRedirectURL() != null) {
+            handleRedirect(exchange, httpResponse.getRedirectURL());
+        } else {
+            String response = httpResponse.getResponse();
+            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+            out.println(new Date() + " PUT: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
+        }
+    }
+
+    private void handleDeleteRequest(HttpExchange exchange) throws IOException {
+        HttpRequest httpRequest;
+
+        if (pathParams.isEmpty()) {
+            httpRequest = new HttpRequest(new HashMap<>(), new HashMap<>());
+        } else {
+            var data = new HashMap<String, String>();
+            for (int i = 0; i < pathParams.size(); i++) {
+                var key = pathParams.get(i).split(":")[0];
+                data.put(key, params.get(i));
+            }
+            httpRequest = new HttpRequest(new HashMap<>(), data);
+        }
+
+        var httpResponse = new HttpResponse();
+
+        deleteHandler.accept(httpRequest, httpResponse);
+        if (httpResponse.getRedirectURL() != null) {
+            handleRedirect(exchange, httpResponse.getRedirectURL());
+        } else {
+            String response = httpResponse.getResponse();
+            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(response.getBytes());
+            os.close();
+            out.println(new Date() + " DELETE: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
         }
     }
 
@@ -193,15 +290,10 @@ class RouteHandler implements HttpHandler {
         postHandler.accept(httpRequest, httpResponse);
 
         if (httpResponse.getRedirectURL() != null) {
-            exchange.getResponseHeaders().set("Location", httpResponse.getRedirectURL());
-            String response = "Redirecting to " + httpResponse.getRedirectURL();
-            exchange.sendResponseHeaders(301, response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
-            exchange.sendResponseHeaders(200, response.getBytes().length);
+            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
