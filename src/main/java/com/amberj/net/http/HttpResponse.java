@@ -1,13 +1,14 @@
 package com.amberj.net.http;
 
-
 import com.amberj.net.template.DjangoTemplating;
-import com.amberj.net.Config;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.*;
+import java.util.Collections;
+import java.util.Objects;
 
 
 public class HttpResponse {
@@ -15,8 +16,8 @@ public class HttpResponse {
     private String response;
     private int status;
     private String redirectURL;
-
     private final DjangoTemplating templatingEngine;
+    private static FileSystem jarFileSystem;
 
     public HttpResponse() {
         templatingEngine = new DjangoTemplating();
@@ -26,44 +27,56 @@ public class HttpResponse {
         String filePath = template + ".html";
 
         try {
-            var html = getClass().getResource("/templates/" + filePath);
-            if (html != null) {
-                Path path = Paths.get(html.getPath());
+            var html = getFileContent("templates", filePath);
+            if (!Objects.equals(html, "")) {
+                html = templatingEngine.parse(html, data);
 
-
-                // Set the response
-                String templateContent = Files.readString(path);
-
-
-                templateContent = templatingEngine.parse(templateContent, data);
-
-                // Set the response
-                this.response = templateContent;
+                this.response = html;
             } else {
                 this.response = "<h1>Template name is invalid " + filePath + " </h1>";
             }
 
-        } catch (IOException e) {
+        } catch (URISyntaxException | IOException e) {
             this.response = "<h1>Template name is invalid " + filePath + " </h1>";
         }
+    }
+
+    String getFileContent(String basePath, String fileName) throws URISyntaxException, IOException {
+        URL url = getClass().getResource("/" + basePath + "/" + fileName);
+        String content = "";
+        if (url != null) {
+            URI uri = url.toURI();
+            Path path;
+            if (uri.getScheme().equals("jar")) {
+                if (jarFileSystem == null || !jarFileSystem.isOpen()) {
+                    try {
+                        jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+                    } catch (FileSystemAlreadyExistsException e) {
+                        jarFileSystem = FileSystems.getFileSystem(uri);
+                    }
+                }
+                path = jarFileSystem.getPath("/" + basePath + "/" + fileName);
+            } else {
+                path = Paths.get(uri);
+            }
+            content = Files.readString(path);
+        }
+
+        return content;
     }
 
     public void render(String template) {
         String filePath = template + ".html";
 
         try {
-            var html = getClass().getResource("/templates/" + filePath);
-            if (html != null) {
-                Path path = Paths.get(html.getPath());
-
-
-                // Set the response
-                this.response = Files.readString(path);
+            var html = getFileContent("templates", filePath);
+            if (!Objects.equals(html, "")) {
+                this.response = html;
             } else {
                 this.response = "<h1>Template name is invalid " + filePath + " </h1>";
             }
-        } catch (IOException e) {
-            this.response = "<h1>Template name is invalid " + filePath + " </h1>";
+        } catch (URISyntaxException | IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -93,5 +106,4 @@ public class HttpResponse {
     public String getRedirectURL() {
         return this.redirectURL;
     }
-
 }

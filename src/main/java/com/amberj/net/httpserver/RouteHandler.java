@@ -40,18 +40,24 @@ class RouteHandler implements HttpHandler {
         return this;
     }
 
-    public RouteHandler post(BiConsumer<HttpRequest, HttpResponse> handler) {
+    public RouteHandler post(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
         this.postHandler = handler;
+        this.pathParams = pathParams;
+        this.regex = regex;
         return this;
     }
 
-    public RouteHandler put(BiConsumer<HttpRequest, HttpResponse> handler) {
+    public RouteHandler put(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
         this.putHandler = handler;
+        this.pathParams = pathParams;
+        this.regex = regex;
         return this;
     }
 
-    public RouteHandler delete(BiConsumer<HttpRequest, HttpResponse> handler) {
+    public RouteHandler delete(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
         this.deleteHandler = handler;
+        this.pathParams = pathParams;
+        this.regex = regex;
         return this;
     }
 
@@ -87,18 +93,7 @@ class RouteHandler implements HttpHandler {
             return;
         }
 
-
-        if (regex != null) {
-            params = matchWildcard(currRoute, regex);
-            if (!params.isEmpty()) {
-                handleGetRequest(exchange);
-            } else {
-                handleNotFound(exchange);
-            }
-            return;
-        }
-
-        if ((!currRoute.equals(route))) {
+        if (!currRoute.equals(route)) {
             if (pathParams.isEmpty()) {
                 handleNotFound(exchange);
                 return;
@@ -106,28 +101,57 @@ class RouteHandler implements HttpHandler {
         }
 
         if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+            out.println("POST");
             if (postHandler == null) {
                 handleMethodNotAllowed(exchange);
             } else {
-                handlePostRequest(exchange);
+                if (regex != null) {
+                    params = matchWildcard(currRoute, regex);
+                    if (!params.isEmpty() && !currRoute.equals("/")) {
+                        handlePostRequest(exchange);
+                    } else {
+                        handleNotFound(exchange);
+                    }
+                }
             }
         } else if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
             if (getHandler == null) {
                 handleMethodNotAllowed(exchange);
             } else {
-                handleGetRequest(exchange);
+                if (regex != null) {
+                    params = matchWildcard(currRoute, regex);
+                    if (!params.isEmpty() && !currRoute.equals("/")) {
+                        handleGetRequest(exchange);
+                    } else {
+                        handleNotFound(exchange);
+                    }
+                }
             }
         } else if (exchange.getRequestMethod().equalsIgnoreCase("PUT")) {
             if (putHandler == null) {
                 handleMethodNotAllowed(exchange);
             } else {
-                handlePutRequest(exchange);
+                if (regex != null) {
+                    params = matchWildcard(currRoute, regex);
+                    if (!params.isEmpty() && !currRoute.equals("/")) {
+                        handlePutRequest(exchange);
+                    } else {
+                        handleNotFound(exchange);
+                    }
+                }
             }
         } else if (exchange.getRequestMethod().equalsIgnoreCase("DELETE")) {
             if (deleteHandler == null) {
                 handleMethodNotAllowed(exchange);
             } else {
-                handleDeleteRequest(exchange);
+                if (regex != null) {
+                    params = matchWildcard(currRoute, regex);
+                    if (!params.isEmpty() && !currRoute.equals("/")) {
+                        handleDeleteRequest(exchange);
+                    } else {
+                        handleNotFound(exchange);
+                    }
+                }
             }
         }
     }
@@ -216,7 +240,6 @@ class RouteHandler implements HttpHandler {
         }
         reader.close();
 
-
         var httpRequest = new HttpRequest(postData, new HashMap<>());
 
         var httpResponse = new HttpResponse();
@@ -282,7 +305,6 @@ class RouteHandler implements HttpHandler {
         }
         reader.close();
 
-
         var httpRequest = new HttpRequest(postData, new HashMap<>());
 
         var httpResponse = new HttpResponse();
@@ -299,23 +321,19 @@ class RouteHandler implements HttpHandler {
             os.close();
             out.println(new Date() + " POST: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
         }
-
     }
 
     private void handleNotFound(HttpExchange exchange) throws IOException {
-        int statusCode = 404;
-        String response = "404 Not Found";
-        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
+        String response = "404 (Not Found)\n";
+        exchange.sendResponseHeaders(404, response.length());
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
         os.close();
-        out.println(new Date() + " GET: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
     }
 
     private void handleMethodNotAllowed(HttpExchange exchange) throws IOException {
-        int status = 405;
-        String response = "405 Method Not Allowed";
-        exchange.sendResponseHeaders(status, response.getBytes().length);
+        String response = "405 (Method Not Allowed)\n";
+        exchange.sendResponseHeaders(405, response.length());
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
         os.close();

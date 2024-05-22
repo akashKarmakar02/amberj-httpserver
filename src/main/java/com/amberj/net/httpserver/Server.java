@@ -17,7 +17,6 @@ import java.util.regex.Pattern;
 
 import static java.lang.System.out;
 
-
 interface Callback {
     void function();
 }
@@ -54,15 +53,14 @@ public class Server {
         return input.substring(0, wildcardIndex - 1);
     }
 
-
-    public void get(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
-        Pattern pattern = Pattern.compile("\\{([a-zA-Z]+):(int|str)}");
+    private RouteDetails extractPathParams(String route) {
+        Pattern pattern = Pattern.compile("\\{([a-zA-Z]+)}");
         Matcher matcher = pattern.matcher(route);
         ArrayList<String> pathParams = new ArrayList<>();
         String regex = null;
 
         while (matcher.find()) {
-            String placeholder = matcher.group(1) + ":" + matcher.group(2);
+            String placeholder = matcher.group(1);
             if (regex == null) {
                 regex = route.replace("{" + placeholder + "}", "*");
             } else {
@@ -71,38 +69,47 @@ public class Server {
             out.println("Route: " + route + "\n" + "Regex: " + regex + "\n");
             pathParams.add(placeholder);
         }
+
         if (regex != null) {
             route = getPrefixUntilWildcard(route, regex);
         }
 
-        if (routeHandlerMap.containsKey(route)) {
-            routeHandlerMap.put(route, routeHandlerMap.get(route).get(handler, pathParams, regex));
+        return new RouteDetails(route, pathParams, regex);
+    }
+
+    public void get(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
+        RouteDetails routeDetails = extractPathParams(route);
+        if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).get(handler, routeDetails.pathParams, routeDetails.regex));
         } else {
-            routeHandlerMap.put(route, RouteHandler.create(route).get(handler, pathParams, regex));
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).get(handler, routeDetails.pathParams, routeDetails.regex));
         }
     }
 
     public void post(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
-        if (routeHandlerMap.containsKey(route)) {
-            routeHandlerMap.put(route, routeHandlerMap.get(route).post(handler));
+        RouteDetails routeDetails = extractPathParams(route);
+        if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).post(handler, routeDetails.pathParams, routeDetails.regex));
         } else {
-            routeHandlerMap.put(route, RouteHandler.create(route).post(handler));
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).post(handler, routeDetails.pathParams, routeDetails.regex));
         }
     }
 
     public void put(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
-        if (routeHandlerMap.containsKey(route)) {
-            routeHandlerMap.put(route, routeHandlerMap.get(route).put(handler));
+        RouteDetails routeDetails = extractPathParams(route);
+        if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).put(handler, routeDetails.pathParams, routeDetails.regex));
         } else {
-            routeHandlerMap.put(route, RouteHandler.create(route).put(handler));
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).put(handler, routeDetails.pathParams, routeDetails.regex));
         }
     }
 
     public void delete(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
-        if (routeHandlerMap.containsKey(route)) {
-            routeHandlerMap.put(route, routeHandlerMap.get(route).delete(handler));
+        RouteDetails routeDetails = extractPathParams(route);
+        if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).delete(handler, routeDetails.pathParams, routeDetails.regex));
         } else {
-            routeHandlerMap.put(route, RouteHandler.create(route).delete(handler));
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).delete(handler, routeDetails.pathParams, routeDetails.regex));
         }
     }
 
@@ -127,5 +134,16 @@ public class Server {
     public void run() {
         run(() -> out.println("Server is listening on: http://localhost:" + this.port));
     }
-}
 
+    private static class RouteDetails {
+        String cleanedRoute;
+        ArrayList<String> pathParams;
+        String regex;
+
+        RouteDetails(String cleanedRoute, ArrayList<String> pathParams, String regex) {
+            this.cleanedRoute = cleanedRoute;
+            this.pathParams = pathParams;
+            this.regex = regex;
+        }
+    }
+}
