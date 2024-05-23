@@ -66,7 +66,6 @@ public class Server {
             } else {
                 regex = regex.replace("{" + placeholder + "}", "*");
             }
-            out.println("Route: " + route + "\n" + "Regex: " + regex + "\n");
             pathParams.add(placeholder);
         }
 
