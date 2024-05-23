@@ -1,18 +1,25 @@
-**Amberj Net: A Beginner-Friendly Java Web Framework (Alpha Build 20)**
+**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 22)**
 
-Amberj Net is a lightweight Java web framework inspired by Go templating and Django, designed to make writing server-side code easier, especially for beginners. It provides a simple and intuitive API for defining routes, handling requests, and rendering templates.
+Amberj HttpServer is a lightweight Java web framework inspired by Go and Django templating, designed to make writing server-side code easier, especially for beginners. It provides a simple and intuitive API for defining routes, handling requests, and rendering templates.
 
 **Features:**
 
 - **Simple Route Definition:** Define routes using familiar HTTP methods (`get`, `post`, `put`, `delete`).
-- **Template Engine:** Inspired by Django templating, Amberj Net allows embedding dynamic content within templates.
+- **Template Engine:** Inspired by Django templating, Amberj HttpServer allows embedding dynamic content within templates.
 - **Request Handling:** Access request parameters (path, body, headers) for processing data.
 - **Response Rendering:** Render templates with data objects for dynamic content generation.
 
 **Getting Started:**
 
-1. **Add Dependency (placeholder, assuming manual download):**
-   Download the Amberj Net library and include it in your project's classpath.
+1. **Add Dependency:**
+   Add the Amberj HttpServer library in your `pom.xml`.
+   ```
+   <dependency>
+      <groupId>com.amberj</groupId>
+      <artifactId>httpserver</artifactId>
+      <version>0.1.0-alpha-BUILD22</version>
+   </dependency>
+   ```
 
 2. **Create a Server:**
 
@@ -69,7 +76,7 @@ Amberj Net is a lightweight Java web framework inspired by Go templating and Dja
 
 **Additional Notes:**
 
-- Amberj Net is currently in alpha stage (build 20). Features and functionalities might change in future releases.
+- Amberj Net is currently in alpha stage (build 22). Features and functionalities might change in future releases.
 - Error handling and advanced functionalities are not covered in this basic example.
 
 **Example: Sending Response with Object and Path Parameters:**
@@ -85,7 +92,7 @@ server.get("/users/:id", (request, response) -> {
 
 **Further Development:**
 
-Amberj Net is under active development. Here's a glimpse into potential future features:
+Amberj HttpServer is under active development. Here's a glimpse into potential future features:
 
 - Built-in template engine for a more integrated experience.
 - Automatic content negotiation (JSON, HTML).
