@@ -1,4 +1,4 @@
-**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 22)**
+**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 24)**
 
 Amberj HttpServer is a lightweight Java web framework inspired by Go and Django templating, designed to make writing server-side code easier, especially for beginners. It provides a simple and intuitive API for defining routes, handling requests, and rendering templates.
 
@@ -17,7 +17,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
    <dependency>
       <groupId>com.amberj</groupId>
       <artifactId>httpserver</artifactId>
-      <version>0.1.0-alpha-BUILD22</version>
+      <version>0.1.0-alpha-BUILD24</version>
    </dependency>
    ```
 
@@ -45,10 +45,12 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
        response.render("index"); // Render the "index.html" template
    });
 
+   // Only x-www-form data support currently
    server.post("/users", (request, response) -> {
        // Access request data (form data, JSON body, etc.)
-       String username = request.getParam("username");
-       String email = request.getParam("email");
+       var body = request.body();
+       String username = body.get("username");
+       String email = body.get("email");
        // ... process data and generate response
 
        // Render a template with user data
@@ -76,14 +78,14 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
 
 **Additional Notes:**
 
-- Amberj Net is currently in alpha stage (build 22). Features and functionalities might change in future releases.
+- Amberj Net is currently in alpha stage (build 24). Features and functionalities might change in future releases.
 - Error handling and advanced functionalities are not covered in this basic example.
 
 **Example: Sending Response with Object and Path Parameters:**
 
 ```java
-server.get("/users/:id", (request, response) -> {
-    String userId = request.getPathParam("id"); // Access path parameter
+server.get("/users/{id}", (request, response) -> {
+    String userId = request.pathParams().get("id"); // Access path parameter
     User user = // ... fetch user data from database based on ID
 
     response.render("user_profile", user);
