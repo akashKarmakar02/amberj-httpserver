@@ -21,6 +21,7 @@ public class HttpResponse {
 
     public HttpResponse() {
         templatingEngine = new DjangoTemplating();
+        status = 200;
     }
 
     public void render(String template, Object data) {

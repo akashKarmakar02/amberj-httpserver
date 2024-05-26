@@ -6,7 +6,7 @@
 
     <groupId>com.amberj</groupId>
     <artifactId>httpserver</artifactId>
-    <version>0.1.0-alpha-BUILD24</version>
+    <version>0.1.0-alpha-BUILD28</version>
 
     <distributionManagement>
         <repository>

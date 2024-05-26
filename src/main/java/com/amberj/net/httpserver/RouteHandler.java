@@ -225,7 +225,8 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
-            exchange.sendResponseHeaders(200, response.getBytes().length);
+            exchange.getResponseHeaders().set("Content-Type", "text/html");
+            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
             os.close();
@@ -248,6 +249,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
+            exchange.getResponseHeaders().set("Content-Type", "text/html");
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -268,6 +270,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
+            exchange.getResponseHeaders().set("Content-Type", "text/html");
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -290,6 +293,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
+            exchange.getResponseHeaders().set("Content-Type", "text/html");
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
