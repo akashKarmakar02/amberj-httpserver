@@ -1,6 +1,7 @@
 package com.amberj.net.http;
 
-import com.amberj.net.template.DjangoTemplating;
+import com.amberj.net.template.Data;
+import com.amberj.net.template.JinjavaTemplating;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,21 +17,21 @@ public class HttpResponse {
     private String response;
     private int status;
     private String redirectURL;
-    private final DjangoTemplating templatingEngine;
+    private final JinjavaTemplating templatingEngine;
     private static FileSystem jarFileSystem;
 
     public HttpResponse() {
-        templatingEngine = new DjangoTemplating();
+        templatingEngine = new JinjavaTemplating();
         status = 200;
     }
 
-    public void render(String template, Object data) {
+    public void render(String template, Data data) {
         String filePath = template + ".html";
 
         try {
             var html = getFileContent("templates", filePath);
             if (!Objects.equals(html, "")) {
-                html = templatingEngine.parse(html, data);
+                html = templatingEngine.parse(html, data.getContext());
 
                 this.response = html;
             } else {
