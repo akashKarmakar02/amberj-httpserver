@@ -18,10 +18,10 @@ import static java.lang.System.out;
 class RouteHandler implements HttpHandler {
 
     // handler for request
-    private BiConsumer<HttpRequest, HttpResponse> getHandler;
-    private BiConsumer<HttpRequest, HttpResponse> postHandler;
-    private BiConsumer<HttpRequest, HttpResponse> putHandler;
-    private BiConsumer<HttpRequest, HttpResponse> deleteHandler;
+    private final ArrayList<RouteDetails> getHandlers;
+    private final ArrayList<RouteDetails> postHandlers;
+    private final ArrayList<RouteDetails> putHandlers;
+    private final ArrayList<RouteDetails> deleteHandlers;
 
     // route specific values
     private final String route;
@@ -31,31 +31,35 @@ class RouteHandler implements HttpHandler {
 
     private RouteHandler(String route) {
         this.route = route;
+        this.getHandlers = new ArrayList<>();
+        this.postHandlers = new ArrayList<>();
+        this.putHandlers = new ArrayList<>();
+        this.deleteHandlers = new ArrayList<>();
     }
 
     public RouteHandler get(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
-        this.getHandler = handler;
+        this.getHandlers.add(new RouteDetails(pathParams, regex, handler));
         this.pathParams = pathParams;
         this.regex = regex;
         return this;
     }
 
     public RouteHandler post(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
-        this.postHandler = handler;
+        this.postHandlers.add(new RouteDetails(pathParams, regex, handler));
         this.pathParams = pathParams;
         this.regex = regex;
         return this;
     }
 
     public RouteHandler put(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
-        this.putHandler = handler;
+        this.putHandlers.add(new RouteDetails(pathParams, regex, handler));
         this.pathParams = pathParams;
         this.regex = regex;
         return this;
     }
 
     public RouteHandler delete(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
-        this.deleteHandler = handler;
+        this.deleteHandlers.add(new RouteDetails(pathParams, regex, handler));
         this.pathParams = pathParams;
         this.regex = regex;
         return this;
@@ -101,57 +105,76 @@ class RouteHandler implements HttpHandler {
         }
 
         if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
-            out.println("POST");
-            if (postHandler == null) {
+            if (postHandlers.isEmpty()) {
                 handleMethodNotAllowed(exchange);
             } else {
-                if (regex != null) {
-                    params = matchWildcard(currRoute, regex);
-                    if (!params.isEmpty() && !currRoute.equals("/")) {
-                        handlePostRequest(exchange);
-                    } else {
-                        handleNotFound(exchange);
+                for (var handler: postHandlers) {
+                    if (handler.regex == null && currRoute.equals(route)) {
+                        handlePostRequest(exchange, handler.pathParams, handler.handler);
+                        return;
+                    } else if (handler.regex != null) {
+                        params = matchWildcard(currRoute, handler.regex);
+                        if (!params.isEmpty() && !currRoute.equals("/")) {
+                            handlePostRequest(exchange, handler.pathParams, handler.handler);
+                            return;
+                        }
                     }
                 }
+                handleNotFound(exchange);
             }
         } else if (exchange.getRequestMethod().equalsIgnoreCase("GET")) {
-            if (getHandler == null) {
+            if (getHandlers.isEmpty()) {
                 handleMethodNotAllowed(exchange);
             } else {
-                if (regex != null) {
-                    params = matchWildcard(currRoute, regex);
-                    if (!params.isEmpty() && !currRoute.equals("/")) {
-                        handleGetRequest(exchange);
-                    } else {
-                        handleNotFound(exchange);
+                for (var handler: getHandlers) {
+                    if (handler.regex == null && currRoute.equals(route)) {
+                        handleGetRequest(exchange, handler.pathParams, handler.handler);
+                        return;
+                    } else if (handler.regex != null) {
+                        params = matchWildcard(currRoute, handler.regex);
+                        if (!params.isEmpty() && !currRoute.equals("/")) {
+                            handleGetRequest(exchange, handler.pathParams, handler.handler);
+                            return;
+                        }
                     }
                 }
+                handleNotFound(exchange);
             }
         } else if (exchange.getRequestMethod().equalsIgnoreCase("PUT")) {
-            if (putHandler == null) {
+            if (putHandlers.isEmpty()) {
                 handleMethodNotAllowed(exchange);
             } else {
-                if (regex != null) {
-                    params = matchWildcard(currRoute, regex);
-                    if (!params.isEmpty() && !currRoute.equals("/")) {
-                        handlePutRequest(exchange);
-                    } else {
-                        handleNotFound(exchange);
+                for (var handler: putHandlers) {
+                    if (handler.regex == null && currRoute.equals(route)) {
+                        handlePutRequest(exchange, handler.pathParams, handler.handler);
+                        return;
+                    } else if (handler.regex != null) {
+                        params = matchWildcard(currRoute, handler.regex);
+                        if (!params.isEmpty() && !currRoute.equals("/")) {
+                            handlePutRequest(exchange, handler.pathParams, handler.handler);
+                            return;
+                        }
                     }
                 }
+                handleNotFound(exchange);
             }
         } else if (exchange.getRequestMethod().equalsIgnoreCase("DELETE")) {
-            if (deleteHandler == null) {
+            if (deleteHandlers.isEmpty()) {
                 handleMethodNotAllowed(exchange);
             } else {
-                if (regex != null) {
-                    params = matchWildcard(currRoute, regex);
-                    if (!params.isEmpty() && !currRoute.equals("/")) {
-                        handleDeleteRequest(exchange);
-                    } else {
-                        handleNotFound(exchange);
+                for (var handler: deleteHandlers) {
+                    if (handler.regex == null && currRoute.equals(route)) {
+                        handleDeleteRequest(exchange, handler.pathParams, handler.handler);
+                        return;
+                    } else if (handler.regex != null) {
+                        params = matchWildcard(currRoute, handler.regex);
+                        if (!params.isEmpty() && !currRoute.equals("/")) {
+                            handleDeleteRequest(exchange, handler.pathParams, handler.handler);
+                            return;
+                        }
                     }
                 }
+                handleNotFound(exchange);
             }
         }
     }
@@ -159,11 +182,9 @@ class RouteHandler implements HttpHandler {
     private void handleStaticFileRequest(HttpExchange exchange) throws IOException {
         String requestMethod = exchange.getRequestMethod();
 
-        // Only handle GET requests
         if (requestMethod.equalsIgnoreCase("GET")) {
             String filePath = Config.BASE_DIR + Config.STATIC_DIR + exchange.getRequestURI().getPath().substring("/static/".length());
 
-            // Try to read the file
             File file = new File(filePath);
             if (file.exists() && !file.isDirectory()) {
                 exchange.sendResponseHeaders(200, file.length());
@@ -193,23 +214,13 @@ class RouteHandler implements HttpHandler {
         os.close();
     }
 
-    private void handleGetRequest(HttpExchange exchange) throws IOException {
-        HttpRequest httpRequest;
-
-        if (pathParams.isEmpty()) {
-            httpRequest = new HttpRequest(new HashMap<>(), new HashMap<>());
-        } else {
-            var data = new HashMap<String, String>();
-            for (int i = 0; i < pathParams.size(); i++) {
-                var key = pathParams.get(i).split(":")[0];
-                data.put(key, params.get(i));
-            }
-            httpRequest = new HttpRequest(new HashMap<>(), data);
-        }
+    private void handleGetRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
+        var params = getPathParams(pathParams);
+        HttpRequest httpRequest = new HttpRequest(new HashMap<>(), params);
 
         var httpResponse = new HttpResponse();
 
-        getHandler.accept(httpRequest, httpResponse);
+        handler.accept(httpRequest, httpResponse);
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
@@ -222,29 +233,16 @@ class RouteHandler implements HttpHandler {
         }
     }
 
-    private void handlePutRequest(HttpExchange exchange) throws IOException {
-        var inputStream = exchange.getRequestBody();
-        Map<String, Object> postData = new HashMap<>();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] params = line.split("&");
-            for (String param : params) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    String key = keyValue[0];
-                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
-                    postData.put(key, value);
-                }
-            }
-        }
-        reader.close();
+    private void handlePutRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
+        Map<String, Object> body = getBody(exchange);
 
-        var httpRequest = new HttpRequest(postData, new HashMap<>());
+        var params = getPathParams(pathParams);
+
+        var httpRequest = new HttpRequest(body, params);
 
         var httpResponse = new HttpResponse();
 
-        putHandler.accept(httpRequest, httpResponse);
+        handler.accept(httpRequest, httpResponse);
 
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
@@ -258,23 +256,14 @@ class RouteHandler implements HttpHandler {
         }
     }
 
-    private void handleDeleteRequest(HttpExchange exchange) throws IOException {
-        HttpRequest httpRequest;
+    private void handleDeleteRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
+        var params = getPathParams(pathParams);
 
-        if (pathParams.isEmpty()) {
-            httpRequest = new HttpRequest(new HashMap<>(), new HashMap<>());
-        } else {
-            var data = new HashMap<String, String>();
-            for (int i = 0; i < pathParams.size(); i++) {
-                var key = pathParams.get(i).split(":")[0];
-                data.put(key, params.get(i));
-            }
-            httpRequest = new HttpRequest(new HashMap<>(), data);
-        }
+        var httpRequest = new HttpRequest(new HashMap<>(), params);
 
         var httpResponse = new HttpResponse();
 
-        deleteHandler.accept(httpRequest, httpResponse);
+        handler.accept(httpRequest, httpResponse);
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
@@ -287,29 +276,15 @@ class RouteHandler implements HttpHandler {
         }
     }
 
-    private void handlePostRequest(HttpExchange exchange) throws IOException {
-        var inputStream = exchange.getRequestBody();
-        Map<String, Object> postData = new HashMap<>();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] params = line.split("&");
-            for (String param : params) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    String key = keyValue[0];
-                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
-                    postData.put(key, value);
-                }
-            }
-        }
-        reader.close();
+    private void handlePostRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
+        var body = getBody(exchange);
+        var params = getPathParams(pathParams);
 
-        var httpRequest = new HttpRequest(postData, new HashMap<>());
+        var httpRequest = new HttpRequest(body, params);
 
         var httpResponse = new HttpResponse();
 
-        postHandler.accept(httpRequest, httpResponse);
+        handler.accept(httpRequest, httpResponse);
 
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
@@ -338,4 +313,40 @@ class RouteHandler implements HttpHandler {
         os.write(response.getBytes());
         os.close();
     }
+
+    private Map<String, Object> getBody(HttpExchange exchange) throws IOException {
+        var inputStream = exchange.getRequestBody();
+        Map<String, Object> postData = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] params = line.split("&");
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
+                    postData.put(key, value);
+                }
+            }
+        }
+        return postData;
+    }
+
+    private Map<String, String> getPathParams(ArrayList<String> pathParams) {
+        var data = new HashMap<String, String>();
+        if (!pathParams.isEmpty()) {
+            for (int i = 0; i < pathParams.size(); i++) {
+                var key = pathParams.get(i).split(":")[0];
+                data.put(key, params.get(i));
+            }
+        }
+        return data;
+    }
+
+    record RouteDetails(
+            ArrayList<String> pathParams,
+            String regex,
+            BiConsumer<HttpRequest, HttpResponse> handler
+    ) {}
 }
