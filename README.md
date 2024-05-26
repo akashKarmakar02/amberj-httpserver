@@ -1,4 +1,4 @@
-**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 24)**
+**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 28)**
 
 Amberj HttpServer is a lightweight Java web framework inspired by Go and Django templating, designed to make writing server-side code easier, especially for beginners. It provides a simple and intuitive API for defining routes, handling requests, and rendering templates.
 
@@ -17,7 +17,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
    <dependency>
       <groupId>com.amberj</groupId>
       <artifactId>httpserver</artifactId>
-      <version>0.1.0-alpha-BUILD24</version>
+      <version>0.1.0-alpha-BUILD28</version>
    </dependency>
    ```
 
@@ -78,7 +78,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
 
 **Additional Notes:**
 
-- Amberj Net is currently in alpha stage (build 24). Features and functionalities might change in future releases.
+- Amberj Net is currently in alpha stage (build 28). Features and functionalities might change in future releases.
 - Error handling and advanced functionalities are not covered in this basic example.
 
 **Example: Sending Response with Object and Path Parameters:**
