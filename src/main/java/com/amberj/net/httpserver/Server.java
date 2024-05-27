@@ -114,9 +114,6 @@ public class Server {
 
     public void handle() {}
 
-    public void setBaseDir(String path) {
-        Config.BASE_DIR = path;
-    }
 
     public void setStaticDir(String path) {
         Config.STATIC_DIR = path;

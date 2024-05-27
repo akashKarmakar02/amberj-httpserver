@@ -19,6 +19,7 @@ public class HttpResponse {
     private String redirectURL;
     private final JinjavaTemplating templatingEngine;
     private static FileSystem jarFileSystem;
+    private String contentType;
 
     public HttpResponse() {
         templatingEngine = new JinjavaTemplating();
@@ -27,6 +28,7 @@ public class HttpResponse {
 
     public void render(String template, Data data) {
         String filePath = template + ".html";
+        contentType = "text/html";
 
         try {
             var html = getFileContent("templates", filePath);
@@ -69,6 +71,7 @@ public class HttpResponse {
 
     public void render(String template) {
         String filePath = template + ".html";
+        contentType = "text/html";
 
         try {
             var html = getFileContent("templates", filePath);
@@ -82,7 +85,13 @@ public class HttpResponse {
         }
     }
 
+    public void json(Data data) {
+        contentType = "application/json";
+        response = data.toJson();
+    }
+
     public void setResponse(String response) {
+        contentType = "text/html";
         this.response = response;
     }
 
@@ -99,6 +108,10 @@ public class HttpResponse {
     @SuppressWarnings("unused")
     public int getStatus() {
         return status;
+    }
+
+    public String getContentType() {
+        return this.contentType;
     }
 
     public void redirect(String url) {

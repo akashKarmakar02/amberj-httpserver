@@ -1,4 +1,4 @@
-**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 30)**
+**Amberj HttpServer: A Beginner-Friendly Java Web Framework (Alpha Build 31)**
 
 Amberj HttpServer is a lightweight Java web framework inspired by Go and Django templating, designed to make writing server-side code easier and modular, especially for beginners. It provides a simple and intuitive API for defining routes, handling requests, and rendering templates.
 
@@ -8,6 +8,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
 - **Template Engine:** Inspired by Django templating, Amberj HttpServer allows embedding dynamic content within templates.
 - **Request Handling:** Access request parameters (path, body, headers) for processing data.
 - **Response Rendering:** Render templates with data objects for dynamic content generation.
+- **Automatic JSON Conversion:** Converts the data object passed to response to json using `com.fasterxml.jackson` library.
 
 **Getting Started:**
 
@@ -17,7 +18,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
    <dependency>
       <groupId>com.amberj</groupId>
       <artifactId>httpserver</artifactId>
-      <version>0.1.0-alpha-BUILD30</version>
+      <version>0.1.0-alpha-BUILD31</version>
    </dependency>
    ```
 
@@ -80,7 +81,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
 
 **Additional Notes:**
 
-- Amberj Net is currently in alpha stage (build 30). Features and functionalities might change in future releases.
+- Amberj Net is currently in alpha stage (build 31). Features and functionalities might change in future releases.
 - Error handling and advanced functionalities are not covered in this basic example.
 
 **Example: Sending Response with Object and Path Parameters:**
@@ -100,7 +101,6 @@ server.get("/users/{id}", (request, response) -> {
 Amberj HttpServer is under active development. Here's a glimpse into potential future features:
 
 - Built-in template engine for a more integrated experience.
-- Automatic content negotiation (JSON, HTML).
 - Database integration for data persistence.
 - Session management.
 

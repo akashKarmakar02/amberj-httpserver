@@ -1,12 +1,15 @@
 package com.amberj.net.httpserver;
 
 import com.amberj.net.Config;
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.amberj.net.http.HttpRequest;
 import com.amberj.net.http.HttpResponse;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -183,22 +186,21 @@ class RouteHandler implements HttpHandler {
         String requestMethod = exchange.getRequestMethod();
 
         if (requestMethod.equalsIgnoreCase("GET")) {
-            String filePath = Config.BASE_DIR + Config.STATIC_DIR + exchange.getRequestURI().getPath().substring("/static/".length());
+            String filePath = "static/" + exchange.getRequestURI().getPath().substring("/static/".length());
+            URL fileUrl = Resources.getResource(filePath);
 
-            File file = new File(filePath);
-            if (file.exists() && !file.isDirectory()) {
-                exchange.sendResponseHeaders(200, file.length());
+            if (fileUrl.getPath() != null) {
+                String fileContent = Resources.toString(fileUrl, Charsets.UTF_8);
+
+                exchange.sendResponseHeaders(200, fileContent.length());
                 OutputStream outputStream = exchange.getResponseBody();
-                FileInputStream fileInputStream = new FileInputStream(file);
-                fileInputStream.transferTo(outputStream);
-                fileInputStream.close();
+                outputStream.write(fileContent.getBytes(Charsets.UTF_8));
                 outputStream.close();
             } else {
-                // File not found, send 404
                 String response = "File not found";
                 exchange.sendResponseHeaders(404, response.length());
                 OutputStream outputStream = exchange.getResponseBody();
-                outputStream.write(response.getBytes());
+                outputStream.write(response.getBytes(Charsets.UTF_8));
                 outputStream.close();
             }
         }
