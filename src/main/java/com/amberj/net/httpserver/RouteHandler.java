@@ -1,6 +1,8 @@
 package com.amberj.net.httpserver;
 
 import com.amberj.net.Config;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpExchange;
@@ -227,7 +229,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", "text/html");
+            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -251,7 +253,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", "text/html");
+            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -272,7 +274,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", "text/html");
+            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -295,7 +297,7 @@ class RouteHandler implements HttpHandler {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
             String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", "text/html");
+            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
             exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());
@@ -322,19 +324,32 @@ class RouteHandler implements HttpHandler {
 
     private Map<String, Object> getBody(HttpExchange exchange) throws IOException {
         var inputStream = exchange.getRequestBody();
-        Map<String, Object> postData = new HashMap<>();
+        var contentType = exchange.getRequestHeaders().get("Content-Type");
+        Map<String, Object> postData;
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String[] params = line.split("&");
-            for (String param : params) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    String key = keyValue[0];
-                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
-                    postData.put(key, value);
+        if (Objects.equals(contentType.getFirst(), "application/x-www-form-urlencoded")) {
+            String line;
+            postData = new HashMap<>();
+            while ((line = reader.readLine()) != null) {
+                String[] params = line.split("&");
+                for (String param : params) {
+                    String[] keyValue = param.split("=");
+                    if (keyValue.length == 2) {
+                        String key = keyValue[0];
+                        String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
+                        postData.put(key, value);
+                    }
                 }
             }
+        } else if (Objects.equals(contentType.getFirst(), "application/json")) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            StringBuilder jsonString = new StringBuilder();
+            for (var line: reader.lines().toArray()) {
+                jsonString.append(line);
+            }
+            postData = objectMapper.readValue(jsonString.toString(), new TypeReference<>() {});
+        } else {
+            postData = new HashMap<>();
         }
         return postData;
     }
