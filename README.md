@@ -17,10 +17,17 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
 Add the Amberj HttpServer library in your `pom.xml`:
 
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-    <groupId>com.amberj</groupId>
-    <artifactId>httpserver</artifactId>
-    <version>0.1.0-alpha-BUILD32</version>
+    <groupId>com.github.akashKarmakar02</groupId>
+	<artifactId>amberj</artifactId>
+    <version>0.1.0-alpha-BUILD34</version>
 </dependency>
 ```
 
@@ -55,7 +62,7 @@ server.post("/users", (request, response) -> {
     var body = request.body();
     String username = body.get("username");
     String email = body.get("email");
-    
+
     response.render("user_profile", new Data()
             .with("username", username)
             .with("email", email));
@@ -90,7 +97,7 @@ server.get("/users/{id}", (request, response) -> {
 
 ## Additional Notes
 
-- Amberj Net is currently in alpha stage (build 32). Features and functionalities might change in future releases.
+- Amberj Net is currently in alpha stage (build 34). Features and functionalities might change in future releases.
 - Error handling and advanced functionalities are not covered in this basic example.
 
 ## Further Development

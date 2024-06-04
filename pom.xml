@@ -6,7 +6,7 @@
 
     <groupId>com.amberj</groupId>
     <artifactId>httpserver</artifactId>
-    <version>0.1.0-alpha-BUILD33</version>
+    <version>0.1.0-alpha-BUILD34</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
