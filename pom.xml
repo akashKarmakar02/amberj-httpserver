@@ -6,15 +6,7 @@
 
     <groupId>com.amberj</groupId>
     <artifactId>httpserver</artifactId>
-    <version>0.1.0-alpha-BUILD32</version>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub AmberJ Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/akashKarmakar02/amberj</url>
-        </repository>
-    </distributionManagement>
+    <version>0.1.0-alpha-BUILD33</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
