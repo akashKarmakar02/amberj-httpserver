@@ -27,7 +27,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.3</version>
+                <version>3.4.0</version> <!-- Adjusted version -->
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -49,7 +49,6 @@
                     <target>21</target>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 </project>
