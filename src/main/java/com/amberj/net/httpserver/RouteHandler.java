@@ -1,8 +1,6 @@
 package com.amberj.net.httpserver;
 
 import com.amberj.net.Config;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpExchange;
@@ -12,8 +10,8 @@ import com.amberj.net.http.HttpResponse;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,6 +40,14 @@ class RouteHandler implements HttpHandler {
         this.deleteHandlers = new ArrayList<>();
     }
 
+    public RouteHandler handle(com.amberj.net.httpserver.HttpHandler handler, ArrayList<String> pathParams, String regex) {
+        this.getHandlers.add(new RouteDetails(pathParams, regex, handler::get));
+        this.postHandlers.add(new RouteDetails(pathParams, regex, handler::post));
+        this.putHandlers.add(new RouteDetails(pathParams, regex, handler::put));
+        this.deleteHandlers.add(new RouteDetails(pathParams, regex, handler::delete));
+        return this;
+    }
+
     public RouteHandler get(BiConsumer<HttpRequest, HttpResponse> handler, ArrayList<String> pathParams, String regex) {
         this.getHandlers.add(new RouteDetails(pathParams, regex, handler));
         this.pathParams = pathParams;
@@ -67,6 +73,14 @@ class RouteHandler implements HttpHandler {
         this.deleteHandlers.add(new RouteDetails(pathParams, regex, handler));
         this.pathParams = pathParams;
         this.regex = regex;
+        return this;
+    }
+
+    public RouteHandler handler(com.amberj.net.httpserver.HttpHandler handler, ArrayList<String> pathParams, String regex) {
+        this.getHandlers.add(new RouteDetails(pathParams, regex, handler::get));
+        this.postHandlers.add(new RouteDetails(pathParams, regex, handler::post));
+        this.deleteHandlers.add(new RouteDetails(pathParams, regex, handler::delete));
+        this.putHandlers.add(new RouteDetails(pathParams, regex, handler::put));
         return this;
     }
 
@@ -190,21 +204,25 @@ class RouteHandler implements HttpHandler {
         if (requestMethod.equalsIgnoreCase("GET")) {
             String filePath = "static/" + exchange.getRequestURI().getPath().substring("/static/".length());
             URL fileUrl = Resources.getResource(filePath);
+            try {
+                if (fileUrl.getPath() != null) {
+                    String fileContent = Resources.toString(fileUrl, Charsets.UTF_8);
 
-            if (fileUrl.getPath() != null) {
-                String fileContent = Resources.toString(fileUrl, Charsets.UTF_8);
-
-                exchange.sendResponseHeaders(200, fileContent.length());
-                OutputStream outputStream = exchange.getResponseBody();
-                outputStream.write(fileContent.getBytes(Charsets.UTF_8));
-                outputStream.close();
-            } else {
-                String response = "File not found";
-                exchange.sendResponseHeaders(404, response.length());
-                OutputStream outputStream = exchange.getResponseBody();
-                outputStream.write(response.getBytes(Charsets.UTF_8));
-                outputStream.close();
+                    exchange.sendResponseHeaders(200, fileContent.length());
+                    OutputStream outputStream = exchange.getResponseBody();
+                    outputStream.write(fileContent.getBytes(Charsets.UTF_8));
+                    outputStream.close();
+                } else {
+                    String response = "File not found";
+                    exchange.sendResponseHeaders(404, response.length());
+                    OutputStream outputStream = exchange.getResponseBody();
+                    outputStream.write(response.getBytes(Charsets.UTF_8));
+                    outputStream.close();
+                }
+            } catch (IOException e) {
+                exchange.sendResponseHeaders(500, -1);
             }
+
         }
     }
 
@@ -219,91 +237,118 @@ class RouteHandler implements HttpHandler {
     }
 
     private void handleGetRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
-        var params = getPathParams(pathParams);
-        HttpRequest httpRequest = new HttpRequest(new HashMap<>(), params);
+        var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
 
         var httpResponse = new HttpResponse();
 
-        handler.accept(httpRequest, httpResponse);
+        try {
+            handler.accept(httpRequest, httpResponse);
+        } catch (Exception e) {
+            handleError(exchange, e);
+        }
+
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
-            String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
-            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            handleRequest(exchange, httpResponse);
             out.println(new Date() + " GET: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
         }
     }
 
     private void handlePutRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
-        Map<String, Object> body = getBody(exchange);
-
-        var params = getPathParams(pathParams);
-
-        var httpRequest = new HttpRequest(body, params);
+        var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
 
         var httpResponse = new HttpResponse();
 
-        handler.accept(httpRequest, httpResponse);
+        try {
+            handler.accept(httpRequest, httpResponse);
+        } catch (Exception e) {
+            handleError(exchange, e);
+        }
 
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
-            String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
-            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            handleRequest(exchange, httpResponse);
             out.println(new Date() + " PUT: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
         }
     }
 
     private void handleDeleteRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
-        var params = getPathParams(pathParams);
-
-        var httpRequest = new HttpRequest(new HashMap<>(), params);
+        var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
 
         var httpResponse = new HttpResponse();
 
-        handler.accept(httpRequest, httpResponse);
+        try {
+            handler.accept(httpRequest, httpResponse);
+        } catch (Exception e) {
+            handleError(exchange, e);
+        }
+
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
-            String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
-            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            handleRequest(exchange, httpResponse);
             out.println(new Date() + " DELETE: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
         }
     }
 
     private void handlePostRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
-        var body = getBody(exchange);
-        var params = getPathParams(pathParams);
 
-        var httpRequest = new HttpRequest(body, params);
+        var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
 
         var httpResponse = new HttpResponse();
-
-        handler.accept(httpRequest, httpResponse);
+        try {
+            handler.accept(httpRequest, httpResponse);
+        } catch (Exception e) {
+            handleError(exchange, e);
+        }
 
         if (httpResponse.getRedirectURL() != null) {
             handleRedirect(exchange, httpResponse.getRedirectURL());
         } else {
-            String response = httpResponse.getResponse();
-            exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
-            exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            handleRequest(exchange, httpResponse);
             out.println(new Date() + " POST: " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
         }
+    }
+
+    private void handleError(HttpExchange exchange, Exception e) throws IOException {
+        AtomicReference<String> errorMessage = new AtomicReference<>(e.getMessage());
+        Arrays.stream(e.getStackTrace()).forEach((stackTraceElement) -> {
+            errorMessage.updateAndGet(v -> v + "<br>&ensp;at " + stackTraceElement.toString());
+        });
+        e.printStackTrace();
+        var html = """
+                <html>
+                <head>
+                    <title>Internal Server Error</title>
+                </head>
+                <body>
+                    <h1>500</h1><h3>(Internal Server Error)</h3>
+                    <div>""" + errorMessage + """
+                </div>
+                </body>
+                </html>
+                """;
+        exchange.getResponseHeaders().set("Content-Type", "text");
+        exchange.sendResponseHeaders(500, html.getBytes().length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(html.getBytes());
+        os.close();
+        out.println(new Date() + " " + exchange.getRequestMethod() + ": " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
+    }
+
+    private void handleRequest(HttpExchange exchange, HttpResponse httpResponse) throws IOException {
+        if (!httpResponse.isMethodAllowed()) {
+            handleMethodNotAllowed(exchange);
+            return;
+        }
+        String response = httpResponse.getResponse();
+        exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
+        exchange.sendResponseHeaders(httpResponse.getStatus(), response.getBytes().length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
     }
 
     private void handleNotFound(HttpExchange exchange) throws IOException {
@@ -320,49 +365,6 @@ class RouteHandler implements HttpHandler {
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
         os.close();
-    }
-
-    private Map<String, Object> getBody(HttpExchange exchange) throws IOException {
-        var inputStream = exchange.getRequestBody();
-        var contentType = exchange.getRequestHeaders().get("Content-Type");
-        Map<String, Object> postData;
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        if (Objects.equals(contentType.getFirst(), "application/x-www-form-urlencoded")) {
-            String line;
-            postData = new HashMap<>();
-            while ((line = reader.readLine()) != null) {
-                String[] params = line.split("&");
-                for (String param : params) {
-                    String[] keyValue = param.split("=");
-                    if (keyValue.length == 2) {
-                        String key = keyValue[0];
-                        String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
-                        postData.put(key, value);
-                    }
-                }
-            }
-        } else if (Objects.equals(contentType.getFirst(), "application/json")) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            StringBuilder jsonString = new StringBuilder();
-            for (var line: reader.lines().toArray()) {
-                jsonString.append(line);
-            }
-            postData = objectMapper.readValue(jsonString.toString(), new TypeReference<>() {});
-        } else {
-            postData = new HashMap<>();
-        }
-        return postData;
-    }
-
-    private Map<String, String> getPathParams(ArrayList<String> pathParams) {
-        var data = new HashMap<String, String>();
-        if (!pathParams.isEmpty()) {
-            for (int i = 0; i < pathParams.size(); i++) {
-                var key = pathParams.get(i).split(":")[0];
-                data.put(key, params.get(i));
-            }
-        }
-        return data;
     }
 
     record RouteDetails(
