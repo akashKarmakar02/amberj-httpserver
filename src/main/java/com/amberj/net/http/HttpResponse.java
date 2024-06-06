@@ -20,10 +20,12 @@ public class HttpResponse {
     private final JinjavaTemplating templatingEngine;
     private static FileSystem jarFileSystem;
     private String contentType;
+    private boolean isMethodAllowed;
 
     public HttpResponse() {
         templatingEngine = new JinjavaTemplating();
         status = 200;
+        this.isMethodAllowed = true;
     }
 
     public void render(String template, Data data) {
@@ -90,7 +92,7 @@ public class HttpResponse {
         response = data.toJson();
     }
 
-    public void setResponse(String response) {
+    public void write(String response) {
         contentType = "text/html";
         this.response = response;
     }
@@ -110,6 +112,10 @@ public class HttpResponse {
         return status;
     }
 
+    public boolean isMethodAllowed() {
+        return isMethodAllowed;
+    }
+
     public String getContentType() {
         return this.contentType;
     }
@@ -120,5 +126,9 @@ public class HttpResponse {
 
     public String getRedirectURL() {
         return this.redirectURL;
+    }
+
+    public void methodNotAllowed() {
+        this.isMethodAllowed = false;
     }
 }
