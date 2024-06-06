@@ -17,10 +17,6 @@ import java.util.regex.Pattern;
 
 import static java.lang.System.out;
 
-interface Callback {
-    void function();
-}
-
 public class Server {
     private final HttpServer server;
     private final int port;
@@ -112,7 +108,14 @@ public class Server {
         }
     }
 
-    public void handle() {}
+    public void handle(String route, HttpHandler handler) {
+        RouteDetails routeDetails = extractPathParams(route);
+        if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).handler(handler, routeDetails.pathParams, routeDetails.regex));
+        } else {
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).handler(handler, routeDetails.pathParams, routeDetails.regex));
+        }
+    }
 
 
     public void setStaticDir(String path) {
@@ -142,4 +145,9 @@ public class Server {
             this.regex = regex;
         }
     }
+
+    public interface Callback {
+        void function();
+    }
+
 }
