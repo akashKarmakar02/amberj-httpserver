@@ -6,7 +6,7 @@
 
     <groupId>com.amberj</groupId>
     <artifactId>httpserver</artifactId>
-    <version>0.1.0-BETA-01</version>
+    <version>0.1.0-BETA-02</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -27,7 +27,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.0</version> <!-- Adjusted version -->
+                <version>3.4.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
