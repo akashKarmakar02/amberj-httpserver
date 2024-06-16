@@ -99,6 +99,15 @@ public class Server {
         }
     }
 
+    public void patch(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
+        RouteDetails routeDetails = extractPathParams(route);
+        if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).patch(handler, routeDetails.pathParams, routeDetails.regex));
+        } else {
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).patch(handler, routeDetails.pathParams, routeDetails.regex));
+        }
+    }
+
     public void delete(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -111,9 +120,9 @@ public class Server {
     public void handle(String route, HttpHandler handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
-            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).handler(handler, routeDetails.pathParams, routeDetails.regex));
+            routeHandlerMap.put(routeDetails.cleanedRoute, routeHandlerMap.get(routeDetails.cleanedRoute).handle(handler, routeDetails.pathParams, routeDetails.regex));
         } else {
-            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).handler(handler, routeDetails.pathParams, routeDetails.regex));
+            routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).handle(handler, routeDetails.pathParams, routeDetails.regex));
         }
     }
 
@@ -122,12 +131,12 @@ public class Server {
         Config.STATIC_DIR = path;
     }
 
-    public void run(Callback function) {
+    public void run(Runnable function) {
         routeHandlerMap.keySet().forEach((route) -> server.createContext(route, routeHandlerMap.get(route)));
 
         server.setExecutor(executor);
         server.start();
-        function.function();
+        function.run();
     }
 
     public void run() {
@@ -144,10 +153,6 @@ public class Server {
             this.pathParams = pathParams;
             this.regex = regex;
         }
-    }
-
-    public interface Callback {
-        void function();
     }
 
 }
