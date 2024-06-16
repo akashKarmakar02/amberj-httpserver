@@ -19,4 +19,6 @@ public interface HttpHandler {
     default void put(HttpRequest request, HttpResponse response) {
         response.methodNotAllowed();
     }
+
+    default void patch(HttpRequest request, HttpResponse response) { response.methodNotAllowed(); }
 }
