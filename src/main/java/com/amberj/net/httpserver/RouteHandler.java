@@ -45,6 +45,7 @@ class RouteHandler implements HttpHandler {
         this.postHandlers.add(new RouteDetails(pathParams, regex, handler::post));
         this.deleteHandlers.add(new RouteDetails(pathParams, regex, handler::delete));
         this.putHandlers.add(new RouteDetails(pathParams, regex, handler::put));
+        this.patchHandlers.add(new RouteDetails(pathParams, regex, handler::patch));
         return this;
     }
 
