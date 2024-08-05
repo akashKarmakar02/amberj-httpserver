@@ -9,6 +9,9 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
@@ -22,12 +25,19 @@ public class Server {
     private final int port;
     private final HashMap<String, RouteHandler> routeHandlerMap;
     private final ExecutorService executor;
+    private final List<TriConsumer<HttpRequest, HttpResponse, Next>> middlewares;
 
+
+    /**
+     * @param port The port you want to start your server
+     * @throws IOException
+     */
     public Server(int port) throws IOException {
         this.routeHandlerMap = new HashMap<>();
         this.server = HttpServer.create(new InetSocketAddress(port), 512);
         this.port = port;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.middlewares = new ArrayList<>();
     }
 
     public Server(int port, int backlog) throws IOException {
@@ -35,6 +45,7 @@ public class Server {
         this.server = HttpServer.create(new InetSocketAddress(port), backlog);
         this.port = port;
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
+        this.middlewares = new ArrayList<>();
     }
 
     public static String getPrefixUntilWildcard(String input, String wildcardPattern) {
@@ -126,13 +137,20 @@ public class Server {
         }
     }
 
+    public void use(TriConsumer<HttpRequest, HttpResponse, Next> middleware) {
+        this.middlewares.add(middleware);
+    }
 
     public void setStaticDir(String path) {
         Config.STATIC_DIR = path;
     }
 
     public void run(Runnable function) {
-        routeHandlerMap.keySet().forEach((route) -> server.createContext(route, routeHandlerMap.get(route)));
+        routeHandlerMap.keySet().forEach((route) -> {
+            RouteHandler handler = routeHandlerMap.get(route);
+            handler.setMiddlewares(this.middlewares);
+            server.createContext(route, handler);
+        });
 
         server.setExecutor(executor);
         server.start();

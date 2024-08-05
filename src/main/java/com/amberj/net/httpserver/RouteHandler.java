@@ -30,6 +30,7 @@ class RouteHandler implements HttpHandler {
     // route specific values
     private final String route;
     private List<String> params;
+    private List<TriConsumer<HttpRequest, HttpResponse, Next>> middlewares;
 
     private RouteHandler(String route) {
         this.route = route;
@@ -38,6 +39,10 @@ class RouteHandler implements HttpHandler {
         this.putHandlers = new ArrayList<>();
         this.deleteHandlers = new ArrayList<>();
         this.patchHandlers = new ArrayList<>();
+    }
+
+    public void setMiddlewares(List<TriConsumer<HttpRequest, HttpResponse, Next>> middlewares) {
+        this.middlewares = middlewares;
     }
 
     public RouteHandler handle(com.amberj.net.httpserver.HttpHandler handler, ArrayList<String> pathParams, String regex) {
@@ -221,7 +226,23 @@ class RouteHandler implements HttpHandler {
         var httpResponse = new HttpResponse();
 
         try {
-            handler.accept(httpRequest, httpResponse);
+            if (!middlewares.isEmpty()) {
+                Runnable chainedFunc = null;
+
+                for (var middleware: middlewares.reversed()) {
+                    if (chainedFunc == null) {
+                        chainedFunc = () -> middleware.accept(httpRequest, httpResponse, () -> handler.accept(httpRequest, httpResponse));
+                    } else {
+                        Runnable finalChainedFunc = chainedFunc;
+                        chainedFunc = () -> middleware.accept(httpRequest, httpResponse, finalChainedFunc::run);
+                    }
+                }
+
+                assert chainedFunc != null;
+                chainedFunc.run();
+            } else {
+                handler.accept(httpRequest, httpResponse);
+            }
         } catch (Exception e) {
             handleError(exchange, e);
         }

@@ -71,6 +71,10 @@ public class HttpResponse {
         return content;
     }
 
+    /**
+     * The template which is in resources/templates directory
+     * @param template the html file name
+     */
     public void render(String template) {
         String filePath = template + ".html";
         contentType = "text/html";
@@ -92,6 +96,10 @@ public class HttpResponse {
         response = data.toJson();
     }
 
+    /**
+     * Writes the given string into the output buffer
+     * @param response
+     */
     public void write(String response) {
         contentType = "text/html";
         this.response = response;
