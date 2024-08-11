@@ -9,6 +9,7 @@ public record HttpRequest(
         Map<String, String> pathParams,
         Map<String, List<String>> queryParams,
         Map<String, List<String>> header,
+        Map<String, String> cookies,
         String method,
         URI uri
 ) {

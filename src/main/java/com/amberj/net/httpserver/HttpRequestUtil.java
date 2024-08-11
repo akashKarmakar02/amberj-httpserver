@@ -24,9 +24,10 @@ class HttpRequestUtil {
         }
         var params = getPathParams(pathParams, paramsList);
         var header = getHeader(exchange);
+        var cookies = getCookiesFromHeader(header);
         var queryParams = getQueryParams(exchange);
 
-        return new HttpRequest(body, params, queryParams, header, exchange.getRequestMethod(), exchange.getRequestURI());
+        return new HttpRequest(body, params, queryParams, header, cookies, exchange.getRequestMethod(), exchange.getRequestURI());
     }
 
     private static Map<String, Object> getBody(HttpExchange exchange) throws IOException {
@@ -103,5 +104,26 @@ class HttpRequestUtil {
         var headers = exchange.getRequestHeaders();
 
         return new HashMap<>(headers);
+    }
+
+    private static Map<String, String> getCookiesFromHeader(Map<String, List<String>> headers) {
+        Map<String, String> cookies = new HashMap<>();
+
+        List<String> cookieHeaders = headers.get("Cookie");
+        if (cookieHeaders != null) {
+            for (String header : cookieHeaders) {
+                String[] cookiePairs = header.split(";");
+                for (String cookie : cookiePairs) {
+                    String[] keyValue = cookie.split("=");
+                    if (keyValue.length == 2) {
+                        String key = keyValue[0].trim();
+                        String value = keyValue[1].trim();
+                        cookies.put(key, value);
+                    }
+                }
+            }
+        }
+
+        return cookies;
     }
 }
