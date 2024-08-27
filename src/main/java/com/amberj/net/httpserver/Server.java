@@ -79,6 +79,9 @@ public class Server {
         if (regex != null) {
             route = getPrefixUntilWildcard(route, regex);
         }
+        if (route.endsWith("/")) {
+            route = route.substring(0, route.length() - 1);
+        }
 
         return new RouteDetails(route, pathParams, regex);
     }

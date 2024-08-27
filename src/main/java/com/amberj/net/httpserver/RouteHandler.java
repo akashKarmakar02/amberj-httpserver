@@ -1,15 +1,19 @@
 package com.amberj.net.httpserver;
 
 import com.amberj.net.Config;
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.amberj.net.http.HttpRequest;
 import com.amberj.net.http.HttpResponse;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -110,10 +114,13 @@ class RouteHandler implements HttpHandler {
             handleStaticFileRequest(exchange);
             return;
         }
+        if (currRoute.endsWith("/")) {
+            currRoute = currRoute.substring(0, currRoute.length() - 1);
+        }
 
         String method = exchange.getRequestMethod().toUpperCase();
 
-        RouteDetails matchedHandler = null;
+        RouteDetails matchedHandler;
         switch (method) {
             case "GET":
                 matchedHandler = matchRoute(currRoute, getHandlers);
@@ -140,6 +147,8 @@ class RouteHandler implements HttpHandler {
         } else {
             handleRequest(exchange, matchedHandler.pathParams, matchedHandler.handler);
         }
+
+        out.println(new Date() + " " + exchange.getRequestMethod() + ": " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
     }
 
     private RouteDetails matchRoute(String currRoute, List<RouteDetails> handlers) {
@@ -156,28 +165,39 @@ class RouteHandler implements HttpHandler {
         return null;
     }
 
+    String getFileContent(String fileName) throws URISyntaxException, IOException {
+        URL url = getClass().getClassLoader().getResource("static/" + fileName);
+        String content = "";
+        if (url != null) {
+            URI uri = url.toURI();
+            Path path = Paths.get(uri);
+            content = Files.readString(path);
+        }
+
+        return content;
+    }
+
     private void handleStaticFileRequest(HttpExchange exchange) throws IOException {
         String requestMethod = exchange.getRequestMethod();
 
         if (requestMethod.equalsIgnoreCase("GET")) {
-            String filePath = "static/" + exchange.getRequestURI().getPath().substring("/static/".length());
-            URL fileUrl = Resources.getResource(filePath);
+            String filePath = exchange.getRequestURI().getPath().substring("/static/".length());
             try {
-                if (fileUrl.getPath() != null) {
-                    String fileContent = Resources.toString(fileUrl, Charsets.UTF_8);
+                var fileContent = getFileContent(filePath);
+                if (!Objects.equals(fileContent, "")) {
 
                     exchange.sendResponseHeaders(200, fileContent.length());
                     OutputStream outputStream = exchange.getResponseBody();
-                    outputStream.write(fileContent.getBytes(Charsets.UTF_8));
+                    outputStream.write(fileContent.getBytes(StandardCharsets.UTF_8));
                     outputStream.close();
                 } else {
                     String response = "File not found";
                     exchange.sendResponseHeaders(404, response.length());
                     OutputStream outputStream = exchange.getResponseBody();
-                    outputStream.write(response.getBytes(Charsets.UTF_8));
+                    outputStream.write(response.getBytes(StandardCharsets.UTF_8));
                     outputStream.close();
                 }
-            } catch (IOException e) {
+            } catch (IOException | URISyntaxException e) {
                 exchange.sendResponseHeaders(500, -1);
             }
 
@@ -217,7 +237,6 @@ class RouteHandler implements HttpHandler {
         OutputStream os = exchange.getResponseBody();
         os.write(html.getBytes());
         os.close();
-        out.println(new Date() + " " + exchange.getRequestMethod() + ": " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
     }
 
     private void handleRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
@@ -262,8 +281,6 @@ class RouteHandler implements HttpHandler {
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
         os.close();
-
-        out.println(new Date() + " " + exchange.getRequestMethod().toUpperCase() +": " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
     }
 
     private void handleNotFound(HttpExchange exchange) throws IOException {

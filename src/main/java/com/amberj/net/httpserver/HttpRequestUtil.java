@@ -1,13 +1,10 @@
 package com.amberj.net.httpserver;
 
 import com.amberj.net.http.HttpRequest;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dslplatform.json.DslJson;
 import com.sun.net.httpserver.HttpExchange;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -54,12 +51,13 @@ class HttpRequestUtil {
                 }
             }
         } else if (Objects.equals(contentType.getFirst(), "application/json")) {
-            ObjectMapper objectMapper = new ObjectMapper();
+            DslJson<Object> dslJson = new DslJson<>();
             StringBuilder jsonString = new StringBuilder();
             for (var line: reader.lines().toArray()) {
                 jsonString.append(line);
             }
-            postData = objectMapper.readValue(jsonString.toString(), new TypeReference<>() {});
+            ByteArrayInputStream input = new ByteArrayInputStream(jsonString.toString().getBytes(StandardCharsets.UTF_8));
+            postData = (Map<String, Object>) dslJson.deserialize(Map.class, input, new byte[jsonString.toString().length()]);
         } else if (contentType.getFirst().startsWith("multipart/form-data")) {
             postData = MultipartFormDataParser.parseMultipartForm(exchange);
         } else {

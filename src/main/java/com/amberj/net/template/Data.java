@@ -1,17 +1,19 @@
 package com.amberj.net.template;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Maps;
-
+import com.dslplatform.json.DslJson;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 
 public class Data {
     private final Map<String, Object> data;
-    private final ObjectMapper objectMapper;
+    DslJson<Object> dslJson;
+    ByteArrayOutputStream output;
 
     public Data() {
-        data = Maps.newHashMap();
-        objectMapper = new ObjectMapper();
+        data = new HashMap<>();
+        dslJson = new DslJson<>();
     }
 
     public Data with(String key, Object value) {
@@ -25,7 +27,8 @@ public class Data {
 
     public String toJson() {
         try {
-            return objectMapper.writeValueAsString(data);
+            dslJson.serialize(data, output);
+            return output.toString(StandardCharsets.UTF_8);
         } catch (Exception e) {
             e.printStackTrace();
             return null;

@@ -1,7 +1,7 @@
 package com.amberj.net.http;
 
 import com.amberj.net.template.Data;
-import com.amberj.net.template.JinjavaTemplating;
+import com.amberj.net.template.TemplateEngine;
 
 import java.io.IOException;
 import java.net.URI;
@@ -17,13 +17,13 @@ public class HttpResponse {
     private String response;
     private int status;
     private String redirectURL;
-    private final JinjavaTemplating templatingEngine;
+    private final TemplateEngine templatingEngine;
     private static FileSystem jarFileSystem;
     private String contentType;
     private boolean isMethodAllowed;
 
     public HttpResponse() {
-        templatingEngine = new JinjavaTemplating();
+        templatingEngine = new TemplateEngine();
         status = 200;
         this.isMethodAllowed = true;
     }
@@ -33,16 +33,8 @@ public class HttpResponse {
         contentType = "text/html";
 
         try {
-            var html = getFileContent("templates", filePath);
-            if (!Objects.equals(html, "")) {
-                html = templatingEngine.parse(html, data.getContext());
-
-                this.response = html;
-            } else {
-                this.response = "<h1>Template name is invalid " + filePath + " </h1>";
-            }
-
-        } catch (URISyntaxException | IOException e) {
+            this.response = templatingEngine.parse("templates/"+filePath, data.getContext());
+        } catch (IOException e) {
             this.response = "<h1>Template name is invalid " + filePath + " </h1>";
         }
     }

@@ -5,7 +5,7 @@ Amberj HttpServer is a lightweight Java web framework inspired by Go and Django 
 ## Features
 
 - **Simple Route Definition:** Define routes using familiar HTTP methods (`get`, `post`, `put`, `delete`, `patch`).
-- **Simple Middleware Definition:** Define Middleware using `use` method and handle everything you want. 
+- **Simple Middleware Definition:** Define Middleware using `use` method and handle everything you want.n clean  
 - **Template Engine:** Inspired by Django templating, allows embedding dynamic content within templates.
 - **Request Handling:** Access request parameters (path, body, headers) for processing data.
 - **Response Rendering:** Render templates with data objects for dynamic content generation.
