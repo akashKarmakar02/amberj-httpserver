@@ -123,6 +123,7 @@ class RouteHandler implements HttpHandler {
         RouteDetails matchedHandler;
         switch (method) {
             case "GET":
+            case "HEAD":
                 matchedHandler = matchRoute(currRoute, getHandlers);
                 break;
             case "POST":
@@ -144,12 +145,16 @@ class RouteHandler implements HttpHandler {
 
         if (matchedHandler == null) {
             handleNotFound(exchange);
+        } else if ("HEAD".equals(method)) {
+            handleHeadRequest(exchange, matchedHandler.pathParams, matchedHandler.handler);
         } else {
             handleRequest(exchange, matchedHandler.pathParams, matchedHandler.handler);
         }
 
         out.println(new Date() + " " + exchange.getRequestMethod() + ": " + exchange.getRequestURI().toString() + " " + exchange.getResponseCode());
     }
+
+
 
     private RouteDetails matchRoute(String currRoute, List<RouteDetails> handlers) {
         for (RouteDetails handler : handlers) {
@@ -175,6 +180,31 @@ class RouteHandler implements HttpHandler {
         }
 
         return content;
+    }
+
+    private void handleHeadRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
+        var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
+
+        var httpResponse = new HttpResponse();
+
+        try {
+            handler.accept(httpRequest, httpResponse);
+        } catch (Exception e) {
+            handleError(exchange, e);
+        }
+
+        if (!httpResponse.isMethodAllowed()) {
+            handleMethodNotAllowed(exchange);
+            return;
+        }
+
+        if (httpResponse.getRedirectURL() != null) {
+            handleRedirect(exchange, httpResponse.getRedirectURL());
+        }
+
+        exchange.getResponseHeaders().set("Content-Type", httpResponse.getContentType());
+        exchange.sendResponseHeaders(httpResponse.getStatus(), -1); // No response body for HEAD method
+        exchange.getResponseBody().close();
     }
 
     private void handleStaticFileRequest(HttpExchange exchange) throws IOException {
