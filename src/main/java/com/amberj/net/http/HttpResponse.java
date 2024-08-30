@@ -2,6 +2,8 @@ package com.amberj.net.http;
 
 import com.amberj.net.template.Data;
 import com.amberj.net.template.TemplateEngine;
+import com.dslplatform.json.NonNull;
+import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,14 +23,25 @@ public class HttpResponse {
     private static FileSystem jarFileSystem;
     private String contentType;
     private boolean isMethodAllowed;
+    private HttpExchange exchange;
 
-    public HttpResponse() {
+    public HttpResponse(HttpExchange exchange) {
         templatingEngine = new TemplateEngine();
         status = 200;
         this.isMethodAllowed = true;
+        this.exchange = exchange;
     }
 
-    public void render(String template, Data data) {
+    /**
+     * This function gets a <code>.html</code> file from the resources of classpath
+     * and parses it through a template parser.
+     * Which in this case is <code>PebbleEngine</code> which is a very light-weight template parser
+     * with similar syntax to <code>Django Template Engine</code>.
+     *
+     * @param template name of the template file
+     * @param data data which can be accessed in template
+     */
+    public void render(@NonNull  String template, Data data) {
         String filePath = template + ".html";
         contentType = "text/html";
 
@@ -113,7 +126,7 @@ public class HttpResponse {
     }
 
     public boolean isMethodAllowed() {
-        return isMethodAllowed;
+        return !isMethodAllowed;
     }
 
     public String getContentType() {
@@ -130,5 +143,9 @@ public class HttpResponse {
 
     public void methodNotAllowed() {
         this.isMethodAllowed = false;
+    }
+
+    public HttpExchange getExchange() {
+        return this.exchange;
     }
 }

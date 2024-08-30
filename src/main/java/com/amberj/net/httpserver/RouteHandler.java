@@ -185,7 +185,7 @@ class RouteHandler implements HttpHandler {
     private void handleHeadRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
         var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
 
-        var httpResponse = new HttpResponse();
+        var httpResponse = new HttpResponse(exchange);
 
         try {
             handler.accept(httpRequest, httpResponse);
@@ -193,7 +193,7 @@ class RouteHandler implements HttpHandler {
             handleError(exchange, e);
         }
 
-        if (!httpResponse.isMethodAllowed()) {
+        if (httpResponse.isMethodAllowed()) {
             handleMethodNotAllowed(exchange);
             return;
         }
@@ -272,7 +272,7 @@ class RouteHandler implements HttpHandler {
     private void handleRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
         var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
 
-        var httpResponse = new HttpResponse();
+        var httpResponse = new HttpResponse(exchange);
 
         try {
             if (!middlewares.isEmpty()) {
@@ -296,7 +296,7 @@ class RouteHandler implements HttpHandler {
             handleError(exchange, e);
         }
 
-        if (!httpResponse.isMethodAllowed()) {
+        if (httpResponse.isMethodAllowed()) {
             handleMethodNotAllowed(exchange);
             return;
         }

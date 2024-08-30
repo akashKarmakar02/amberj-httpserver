@@ -9,9 +9,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
@@ -86,6 +84,13 @@ public class Server {
         return new RouteDetails(route, pathParams, regex);
     }
 
+    /**
+     * This function register a <code>HTTP GET</code> route
+     * and its handler
+     *
+     * @param route the route that should be registered in the server
+     * @param handler a function to handle the http request
+     */
     public void get(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -95,6 +100,13 @@ public class Server {
         }
     }
 
+    /**
+     * This function register a <code>HTTP POST</code> route
+     * and its handler
+     *
+     * @param route the route that should be registered in the server
+     * @param handler a function to handle the http request
+     */
     public void post(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -104,6 +116,13 @@ public class Server {
         }
     }
 
+    /**
+     * This function register a <code>HTTP PUT</code> route
+     * and its handler
+     *
+     * @param route the route that should be registered in the server
+     * @param handler a function to handle the http request
+     */
     public void put(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -113,6 +132,13 @@ public class Server {
         }
     }
 
+    /**
+     * This function register a <code>HTTP PATCH</code> route
+     * and its handler
+     *
+     * @param route the route that should be registered in the server
+     * @param handler a function to handle the http request
+     */
     public void patch(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -122,6 +148,13 @@ public class Server {
         }
     }
 
+    /**
+     * This function register a <code>HTTP DELETE</code> route
+     * and its handler
+     *
+     * @param route the route that should be registered in the server
+     * @param handler a function to handle the http request
+     */
     public void delete(String route, BiConsumer<HttpRequest, HttpResponse> handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -131,6 +164,13 @@ public class Server {
         }
     }
 
+    /**
+     * This function register a <code>HTTP</code> route
+     * and its handler
+     *
+     * @param route the route that should be registered in the server
+     * @param handler a handler class.
+     */
     public void handle(String route, HttpHandler handler) {
         RouteDetails routeDetails = extractPathParams(route);
         if (routeHandlerMap.containsKey(routeDetails.cleanedRoute)) {
@@ -140,6 +180,10 @@ public class Server {
         }
     }
 
+    /**
+     * Registers global middleware for the server.
+     * @param middleware - a TriConsumer lambda function
+     */
     public void use(TriConsumer<HttpRequest, HttpResponse, Next> middleware) {
         this.middlewares.add(middleware);
     }
@@ -148,11 +192,15 @@ public class Server {
         Config.STATIC_DIR = path;
     }
 
+    /**
+     *
+     * @param function callback function
+     */
     public void run(Runnable function) {
         routeHandlerMap.keySet().forEach((route) -> {
             RouteHandler handler = routeHandlerMap.get(route);
             handler.setMiddlewares(this.middlewares);
-            server.createContext(route, handler);
+            server.createContext(route, handler).getFilters();
         });
 
         server.setExecutor(executor);
