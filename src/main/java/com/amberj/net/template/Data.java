@@ -14,6 +14,7 @@ public class Data {
     public Data() {
         data = new HashMap<>();
         dslJson = new DslJson<>();
+        output = new ByteArrayOutputStream();
     }
 
     public Data with(String key, Object value) {
