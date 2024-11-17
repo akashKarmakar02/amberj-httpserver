@@ -114,7 +114,7 @@ class RouteHandler implements HttpHandler {
             handleStaticFileRequest(exchange);
             return;
         }
-        if (currRoute.endsWith("/")) {
+        if (currRoute.endsWith("/") && currRoute.length() > 1) {
             currRoute = currRoute.substring(0, currRoute.length() - 1);
         }
 
@@ -170,17 +170,18 @@ class RouteHandler implements HttpHandler {
         return null;
     }
 
-    String getFileContent(String fileName) throws URISyntaxException, IOException {
+    byte[] getFileContent(String fileName) throws URISyntaxException, IOException {
         URL url = getClass().getClassLoader().getResource("static/" + fileName);
-        String content = "";
         if (url != null) {
             URI uri = url.toURI();
             Path path = Paths.get(uri);
-            content = Files.readString(path);
+            if (Files.exists(path)) {
+                return Files.readAllBytes(path);
+            }
         }
-
-        return content;
+        return null;
     }
+
 
     private void handleHeadRequest(HttpExchange exchange, ArrayList<String> pathParams, BiConsumer<HttpRequest, HttpResponse> handler) throws IOException {
         var httpRequest = HttpRequestUtil.getHttpRequest(exchange, params, pathParams);
@@ -209,28 +210,36 @@ class RouteHandler implements HttpHandler {
 
     private void handleStaticFileRequest(HttpExchange exchange) throws IOException {
         String requestMethod = exchange.getRequestMethod();
+        if (!requestMethod.equalsIgnoreCase("GET")) {
+            handleMethodNotAllowed(exchange);
+            return;
+        }
 
-        if (requestMethod.equalsIgnoreCase("GET")) {
-            String filePath = exchange.getRequestURI().getPath().substring("/static/".length());
-            try {
-                var fileContent = getFileContent(filePath);
-                if (!Objects.equals(fileContent, "")) {
+        String filePath = exchange.getRequestURI().getPath().substring("/static/".length());
+        try {
+            byte[] fileContent = getFileContent(filePath);
 
-                    exchange.sendResponseHeaders(200, fileContent.length());
-                    OutputStream outputStream = exchange.getResponseBody();
-                    outputStream.write(fileContent.getBytes(StandardCharsets.UTF_8));
-                    outputStream.close();
-                } else {
-                    String response = "File not found";
-                    exchange.sendResponseHeaders(404, response.length());
-                    OutputStream outputStream = exchange.getResponseBody();
-                    outputStream.write(response.getBytes(StandardCharsets.UTF_8));
-                    outputStream.close();
+            if (fileContent != null) {
+                String mimeType = Files.probeContentType(Paths.get("static/" + filePath));
+                if (mimeType == null) {
+                    mimeType = "application/octet-stream"; // Default MIME type
                 }
-            } catch (IOException | URISyntaxException e) {
-                exchange.sendResponseHeaders(500, -1);
-            }
 
+                exchange.getResponseHeaders().set("Content-Type", mimeType);
+                exchange.sendResponseHeaders(200, fileContent.length);
+
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(fileContent);
+                outputStream.close();
+            } else {
+                String response = "File not found";
+                exchange.sendResponseHeaders(404, response.length());
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(response.getBytes(StandardCharsets.UTF_8));
+                outputStream.close();
+            }
+        } catch (IOException | URISyntaxException e) {
+            exchange.sendResponseHeaders(500, -1);
         }
     }
 

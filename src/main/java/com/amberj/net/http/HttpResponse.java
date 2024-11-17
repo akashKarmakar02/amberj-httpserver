@@ -41,7 +41,7 @@ public class HttpResponse {
      * @param template name of the template file
      * @param data data which can be accessed in template
      */
-    public void render(@NonNull  String template, Data data) {
+    public void render(@NonNull String template, Data data) {
         String filePath = template + ".html";
         contentType = "text/html";
 
@@ -85,14 +85,9 @@ public class HttpResponse {
         contentType = "text/html";
 
         try {
-            var html = getFileContent("templates", filePath);
-            if (!Objects.equals(html, "")) {
-                this.response = html;
-            } else {
-                this.response = "<h1>Template name is invalid " + filePath + " </h1>";
-            }
-        } catch (URISyntaxException | IOException e) {
-            throw new RuntimeException(e);
+            this.response = templatingEngine.parse("templates/"+filePath, null);
+        } catch (IOException e) {
+            this.response = "<h1>Template name is invalid " + filePath + " </h1>";
         }
     }
 
