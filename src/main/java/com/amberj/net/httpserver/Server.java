@@ -234,6 +234,10 @@ public class Server<T> {
         handle(route, fContextHandlerToHandler(handler));
     }
 
+    public void context(T context) {
+        this.context = context;
+    }
+
     /**
      * Registers global middleware for the server.
      * @param middleware - a TriConsumer lambda function
