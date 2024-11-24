@@ -18,17 +18,18 @@ import java.util.regex.Pattern;
 
 import static java.lang.System.out;
 
-public class Server {
+public class Server<T> {
     private final HttpServer server;
     private final int port;
     private final HashMap<String, RouteHandler> routeHandlerMap;
     private final ExecutorService executor;
     private final List<TriConsumer<HttpRequest, HttpResponse, Next>> middlewares;
+    private T context;
 
 
     /**
      * @param port The port you want to start your server
-     * @throws IOException
+     * @throws IOException for if the port is busy
      */
     public Server(int port) throws IOException {
         this.routeHandlerMap = new HashMap<>();
@@ -46,7 +47,7 @@ public class Server {
         this.middlewares = new ArrayList<>();
     }
 
-    public static String getPrefixUntilWildcard(String input, String wildcardPattern) {
+    private static String getPrefixUntilWildcard(String input, String wildcardPattern) {
         String regexPattern = wildcardPattern.replace("*", "\\*");
 
         int wildcardIndex = regexPattern.indexOf("*");
@@ -56,6 +57,35 @@ public class Server {
         }
 
         return input.substring(0, wildcardIndex - 1);
+    }
+
+    private HttpHandler fContextHandlerToHandler(WithContextHttpHandler<T> handler) {
+        return new HttpHandler() {
+            @Override
+            public void get(HttpRequest request, HttpResponse response) {
+                handler.get(request, response, context);
+            }
+
+            @Override
+            public void post(HttpRequest request, HttpResponse response) {
+                handler.post(request, response, context);
+            }
+
+            @Override
+            public void delete(HttpRequest request, HttpResponse response) {
+                handler.delete(request, response, context);
+            }
+
+            @Override
+            public void put(HttpRequest request, HttpResponse response) {
+                handler.put(request, response, context);
+            }
+
+            @Override
+            public void patch(HttpRequest request, HttpResponse response) {
+                handler.patch(request, response, context);
+            }
+        };
     }
 
     private RouteDetails extractPathParams(String route) {
@@ -100,6 +130,10 @@ public class Server {
         }
     }
 
+    public void get(String route, TriConsumer<HttpRequest, HttpResponse, T> handler) {
+        get(route, (request, response) -> handler.accept(request, response, context));
+    }
+
     /**
      * This function register a <code>HTTP POST</code> route
      * and its handler
@@ -114,6 +148,10 @@ public class Server {
         } else {
             routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).post(handler, routeDetails.pathParams, routeDetails.regex));
         }
+    }
+
+    public void post(String route, TriConsumer<HttpRequest, HttpResponse, T> handler) {
+        post(route, (request, response) -> handler.accept(request, response, context));
     }
 
     /**
@@ -132,6 +170,10 @@ public class Server {
         }
     }
 
+    public void put(String route, TriConsumer<HttpRequest, HttpResponse, T> handler) {
+        put(route, (request, response) -> handler.accept(request, response, context));
+    }
+
     /**
      * This function register a <code>HTTP PATCH</code> route
      * and its handler
@@ -146,6 +188,10 @@ public class Server {
         } else {
             routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).patch(handler, routeDetails.pathParams, routeDetails.regex));
         }
+    }
+
+    public void patch(String route, TriConsumer<HttpRequest, HttpResponse, T> handler) {
+        patch(route, (request, response) -> handler.accept(request, response, context));
     }
 
     /**
@@ -164,6 +210,10 @@ public class Server {
         }
     }
 
+    public void delete(String route, TriConsumer<HttpRequest, HttpResponse, T> handler) {
+        delete(route, (request, response) -> handler.accept(request, response, context));
+    }
+
     /**
      * This function register a <code>HTTP</code> route
      * and its handler
@@ -178,6 +228,10 @@ public class Server {
         } else {
             routeHandlerMap.put(routeDetails.cleanedRoute, RouteHandler.create(routeDetails.cleanedRoute).handle(handler, routeDetails.pathParams, routeDetails.regex));
         }
+    }
+
+    public void handle(String route, WithContextHttpHandler<T> handler) {
+        handle(route, fContextHandlerToHandler(handler));
     }
 
     /**
